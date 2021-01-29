@@ -58,10 +58,9 @@ void Push(struct TEMPLATE(Stack, TYPE)* stk, int num)
 {
 	OK(*stk);
 
-	if (stk->size + 1 >= stk->capacity)
+	if (stk->size >= stk->capacity)
 	{
 		stk->capacity = stk->capacity * 2;
-		//stk->data = (int*)realloc(stk->data, stk->capacity * sizeof(int));
 		recalloc(stk, stk->capacity, sizeof(TYPE));
 	}
 	*(stk->data + stk->size) = num;
@@ -82,16 +81,26 @@ int Pop(struct TEMPLATE(Stack, TYPE)* stk)
 
 void StackDestruct(struct TEMPLATE(Stack, TYPE) stk)
 {
-	stk.data = stk.data - sizeof(int);
+	stk.data = stk.data - 1;
 
 	printf("\nNOT FREE!\n\n");
-	free(stk.data);           //?????????????????
+	free(stk.data);          
 	printf("FREE!\n\n");
 
 	stk.size = POISON_int;
 	stk.capacity = POISON_int;
 	stk.left_canary = POISON_can;
 	stk.right_canary = POISON_can;
+}
+
+void Print_int(int num)
+{
+	printf("%d", num);
+}
+
+void Print_float(float num)
+{
+	printf("%lf", num);
 }
 
 void DUMP(struct TEMPLATE(Stack, TYPE) stk)
@@ -101,33 +110,33 @@ void DUMP(struct TEMPLATE(Stack, TYPE) stk)
 	printf("Stack ptr - <%p>\n", &stk);
 	printf("Data  ptr - <%p>\n", stk.data);
 	printf("Size - <%d>, Capacity - <%d>\n", stk.size, stk.capacity);
-	printf("Left canary - <%d>, Right canary - <%d>\n", *(stk.data - sizeof(TYPE)), *(stk.data + stk.capacity * sizeof(TYPE)));
-	printf("Left canary - <%d>, Right canary - <%d>\n", stk.left_canary, stk.right_canary);
+	printf("DATA:   Left canary - <%d>, Right canary - <%d>\n", *(stk.data - 1), *(stk.data + stk.capacity));
+	printf("STRUCT: Left canary - <%d>, Right canary - <%d>\n", stk.left_canary, stk.right_canary);
 
 	for (int i = 0; i < stk.capacity; i++)
 	{
-		printf("%d - [%d]\n", i, *(stk.data + i));
+		//printf("%d - [%d]\n", i, *(stk.data + i));
+		printf("%d - [", i);
+		TEMPLATE(Print, TYPE) (*(stk.data + i));
+		printf("]\n");
 	}
 	printf("\n");
 }
 
 void recalloc(struct TEMPLATE(Stack, TYPE) * stk, int elements, int size) // ???????????????????
 {
-	printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!, %d, %d, %d\n\n", stk->capacity, sizeof(TYPE), sizeof(int));
-	stk->data = stk->data - sizeof(int);
-	stk->data = (TYPE*)realloc(stk->data, stk->capacity * sizeof(TYPE) + 2 * sizeof(int));
-	printf("A\n");
+	stk->data = stk->data - 1;
 
-	stk->left_canary = POISON_can;         // ????
-	stk->right_canary = POISON_can;
+	canary_t* can_change = (canary_t*)realloc(stk->data, stk->capacity * sizeof(TYPE) + 2 * sizeof(canary_t));
+	*can_change = POISON_can;
 
-	stk->data = stk->data + sizeof(int);
-	/*
-	stk->data[0] = stk->left_canary; //      ?????
-	stk->data[sizeof(TYPE) * (1 + stk->capacity)] = stk->right_canary;
-	stk->data = stk->data + sizeof(int);
-	*/
-	printf("B\n");
+	stk->data = (TYPE*)(can_change + 1);
+
+	can_change = (canary_t*)(stk->data + stk->capacity);
+	*can_change = POISON_can;
+
+	//stk->left_canary = POISON_can;
+	//stk->right_canary = POISON_can;
 
 	for (int i = stk->size; i < stk->capacity; i++)
 	{
