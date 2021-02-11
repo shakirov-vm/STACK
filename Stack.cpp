@@ -1,14 +1,24 @@
-﻿
+﻿#if 0
 #define TYPE int
 #include "Stack.h"
 #undef TYPE
-/*
+#endif//                                                         @@@@@@
+
+#if 0
 #define TYPE float
 #include "Stack.h"
 #undef TYPE
-*/
+#endif
+
+#if 1
+#define TYPE double
+#include "Stack.h"
+#undef TYPE
+#endif
+
 int main()
 {
+	#if 0
 	Stack_int stk;
 
 	for (int i = 5; i < 25; i++)
@@ -24,22 +34,23 @@ int main()
 	printf("\n\n%d\n\n", a);
 	
 	stk.DUMP();
+	#endif
+	      ///                                                      @@@@@@@@@
 
-	//StackDestruct(stk);
-	/*
-	Stack_float stek;
-	printf("A\n");
+	#if 1
+	Stack_double stek;
+
 	stek.Push(18);
-	printf("B\n");
+
 	stek.Push(1818);
 	stek.Push(181818);
 
 	stek.DUMP();
 
-	int a = stek.Pop();
-	int b = stek.Pop();
+	double a = stek.Pop();
+	double b = stek.Pop();
 
-	printf("a = %d, b = %d\n\n", a, b);
+	printf("a = %lf, b = %lf\n\n", a, b);
 
 	stek.DUMP();
 
@@ -49,7 +60,8 @@ int main()
 	stek.Push(123456);
 
 	stek.DUMP();
-	*/
+	
+	#endif
 
 	return 0;
 }
