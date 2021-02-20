@@ -1,42 +1,45 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 #include <math.h>
+#include <errno.h>
 
 #define CAT(x, y) x##_##y
 #define TEMPLATE(x, y) CAT(x, y)
 
 enum STACK_ERROR
 {
-	STACK_LCD = 1,
-	STACL_RCD = 2,
-	STACK_LCS = 3,
-	STACK_RCS = 4,
+	STACK_LCD  = 1,
+	STACK_RCD  = 2,
+	STACK_LCS  = 3,
+	STACK_RCS  = 4,
 	STACK_NPTR = 5,
 	STACK_OVER = 6,
-	STACK_HASH = 7
+	STACK_HASH = 7,
+	STACK_UNOP = 8
 };
 
 typedef int canary_t;
 
 int POISON_int = 0xDEADBEEF;  
-double POISON_double = 10005000;
+double POISON_double = 100500;
 float POISON_float = 10.87;
 canary_t POISON_can = 0xDEADBEEF;
 
-void Print_int(int num)
+void Fprint_int(FILE* potok, int num)
 {
-	printf("%d", num);
+	fprintf(potok, "%d", num);
 }
 
-void Print_float(float num)
+void Fprint_float(FILE* potok, float num)
 {
-	printf("%f", num);
+	fprintf(potok, "%f", num);
 }
 
-void Print_double(double num)
+void Fprint_double(FILE* potok, double num)
 {
-	printf("%lf", num);
+	fprintf(potok, "%lf", num);
 }
 
 class TEMPLATE(Stack, TYPE)
@@ -47,6 +50,7 @@ private:
 	TYPE* data;
 	int  size;
 	int  capacity;
+	unsigned long long hash;
 	canary_t  right_canary;
 
 public:
@@ -57,21 +61,69 @@ public:
 	void OK();
 	void DUMP();
 	void recalloc(int elements, int Size);
+	unsigned long long Hash_Compute();
 	~TEMPLATE(Stack, TYPE)();
 }; 
 
 void TEMPLATE(Stack, TYPE)::OK()
 {
+	FILE* potok;
+	potok = fopen("log.txt", "a");
+
+	if (errno)
+	{
+		char answer[100];
+
+		sprintf(answer, "Problem file: %s\n", "log.txt");
+
+		perror(answer);
+		exit(STACK_UNOP);
+	}
+
+	int error = 0;
+
 	if (size > capacity)
 	{
+		error = STACK_OVER;
 		printf("!! FULL !!\n");
+		fprintf(potok, "ERRORS Code - <%d>", STACK_OVER);
 	}
-	if (left_canary != POISON_can) printf("STRUCT: !! Left dead !!\n");
-	if (right_canary != POISON_can) printf("STRUCT: !! Right dead !!\n");
-	if (*((canary_t*)data - 1) != POISON_can) printf("DATA: !! left dead !!\n");
-	if (*(canary_t*)(data + capacity) != POISON_can) printf("DATA: !! right dead !!\n");
+	if (left_canary != POISON_can)
+	{
+		error = STACK_LCS;
+		printf("STRUCT: !! Left dead !!\n");
+		fprintf(potok, "ERRORS Code - <%d>", STACK_LCS);
+	}
+	if (right_canary != POISON_can)
+	{
+		error = STACK_RCS;
+		printf("STRUCT: !! Right dead !!\n");
+		fprintf(potok, "ERRORS Code - <%d>", STACK_RCS);
+	}
+	if (*((canary_t*)data - 1) != POISON_can)
+	{
+		error = STACK_LCD;
+		printf("DATA: !! left dead !!\n");
+		fprintf(potok, "ERRORS Code - <%d>", STACK_LCD);
+	}
+	if (*(canary_t*)(data + capacity) != POISON_can)
+	{
+		error = STACK_RCD;
+		printf("DATA: !! right dead !!\n");
+		fprintf(potok, "ERRORS Code - <%d>", STACK_RCD);
+	}
+	if (hash != Hash_Compute())
+	{
+		error = STACK_HASH;
+		printf("Hash isn't true");
+		fprintf(potok, "ERRORS Code - <%d>", STACK_HASH);
+	}
+	if (error != 0)
+	{
+		DUMP();
+	}
 
-	//assert(*(data + capacity) == POISON_can);
+	fclose(potok);
 }
 
 
@@ -91,17 +143,15 @@ TEMPLATE (Stack, TYPE)::TEMPLATE(Stack, TYPE)()
 	canary_t* second_canary = (canary_t*)(data + capacity);
 	*(second_canary) = POISON_can;
 
+	hash = Hash_Compute();
 	size = 0;
 	left_canary = POISON_can;        
 	right_canary = POISON_can;
-
-	DUMP();
 }
 
 void TEMPLATE(Stack, TYPE)::Push(TYPE num)
 {
 	OK();
-	DUMP();
 
 	if (size >= capacity)
 	{
@@ -110,6 +160,7 @@ void TEMPLATE(Stack, TYPE)::Push(TYPE num)
 	}
 	*(data + size) = num;
 	size++;
+	hash = Hash_Compute();
 }
 
 TYPE TEMPLATE(Stack, TYPE)::Pop()
@@ -121,7 +172,7 @@ TYPE TEMPLATE(Stack, TYPE)::Pop()
 	TYPE returned = *(data + size);
 	*(data + size) = TEMPLATE(POISON, TYPE);
 
-	DUMP();
+	hash = Hash_Compute();
 
 	return returned;
 }
@@ -140,21 +191,35 @@ TEMPLATE(Stack, TYPE)::~TEMPLATE(Stack, TYPE)()
 
 void TEMPLATE(Stack, TYPE)::DUMP()
 {
-	printf("Stack ptr - <%p>\n", this);
-	printf("Data  ptr - <%p>\n", data);
-	printf("Size - <%d>, Capacity - <%d>\n", size, capacity);
-	printf("DATA:   Left canary - <%d>, Right canary - <%d>\n", *((canary_t*)data - 1), *(canary_t*)(data + capacity));
-	printf("STRUCT: Left canary - <%d>, Right canary - <%d>\n", left_canary, right_canary);
+	FILE* potok;
+	potok = fopen("log.txt", "a");
+
+	if (errno)
+	{
+		char answer[100];
+
+		sprintf(answer, "Problem file: %s\n", "log.txt");
+
+		perror(answer);
+		exit(STACK_UNOP);
+	}
+
+	fprintf(potok, "Stack ptr - <%p>\n", this);
+	fprintf(potok, "Data  ptr - <%p>\n", data);
+	fprintf(potok, "Size - <%d>, Capacity - <%d>\n", size, capacity);
+	fprintf(potok, "DATA:   Left canary - <%d>, Right canary - <%d>\n", *((canary_t*)data - 1), *(canary_t*)(data + capacity));
+	fprintf(potok, "STRUCT: Left canary - <%d>, Right canary - <%d>\n", left_canary, right_canary);
+	fprintf(potok, "Hash - <%llu>\n", hash);
 
 	for (int i = 0; i < capacity; i++)
 	{
-		printf("%d - [", i);
-		TEMPLATE(Print, TYPE) (*(data + i));
-		printf("]\n");
+		fprintf(potok, "%d - [", i);
+		TEMPLATE(Fprint, TYPE) (potok, *(data + i));
+		fprintf(potok, "]\n");
 	}
-	printf("\n");
+	fprintf(potok, "\n");
 
-	OK();
+	fclose(potok);
 }
 
 void TEMPLATE(Stack, TYPE)::recalloc(int elements, int Size)
@@ -166,13 +231,10 @@ void TEMPLATE(Stack, TYPE)::recalloc(int elements, int Size)
 
 	assert(data);
 
-	printf("left canary - %p\n", data);
-
 	canary_t* first_canary = (canary_t*)(data);
 	*(first_canary) = POISON_can;
 
 	data = (TYPE*)((canary_t*)data + 1);
-	printf("data - %p\n", data);
 
 	canary_t* second_canary = (canary_t*)(data + capacity);
 	*(second_canary) = POISON_can;
@@ -182,9 +244,24 @@ void TEMPLATE(Stack, TYPE)::recalloc(int elements, int Size)
 		data[i] = 0;
 	}
 
-	DUMP();
+	hash = Hash_Compute();
+
+	OK();
 }
 
+
+unsigned long long TEMPLATE(Stack, TYPE)::Hash_Compute()  //              ??????
+{
+	hash = size ^ capacity;
+	unsigned long long hash_dop = 0;
+
+	for (int i = 1; i < capacity - 1; i++)
+	{
+		hash_dop = (int)(1000 * data[i]) & (int)(1000 * data[i - 1]) | (int)(1000 * data[i + 1]);
+		hash = hash ^ hash_dop;
+	}
+	return hash;
+}
 
 /*
 	printf(">>> %p >>> %p >>> %p\n", (canary_t*)data - 1, data, data + capacity);

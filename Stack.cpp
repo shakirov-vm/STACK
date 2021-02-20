@@ -36,7 +36,6 @@ int main()
 	stk.DUMP();
 	#endif
 	      ///                                                      @@@@@@@@@
-
 	#if 1
 	Stack_double stek;
 
@@ -58,6 +57,15 @@ int main()
 	stek.Push(2.71826);
 	stek.Push(3.1416);
 	stek.Push(123456);
+	stek.Push(7.218);
+	stek.Push(55);
+	stek.Push(37);
+	stek.Push(985);
+	stek.Push(12.485);
+	stek.Push(2487);
+	stek.Push(3528);
+	stek.Push(0.21651);
+	stek.Push(0);
 
 	stek.DUMP();
 	
