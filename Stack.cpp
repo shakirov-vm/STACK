@@ -67,6 +67,7 @@ int main()
 	stek.Push(0.21651);
 	stek.Push(0);
 
+
 	stek.DUMP();
 	
 	#endif

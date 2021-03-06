@@ -17,8 +17,20 @@ enum STACK_ERROR
 	STACK_NPTR = 5,
 	STACK_OVER = 6,
 	STACK_HASH = 7,
-	STACK_UNOP = 8
+	STACK_UNOP = 8,
+	STACK_FEWS = 9
 };
+
+// to do
+// 1) ERRORS
+	// nullptr - null data or null struct
+	// index out of range ( size = -1, capacity = -1 )
+// 2) Verify
+	// верификация в начале и в конце каждой функции
+// 3) release & debug
+	// ассерты только во время дебага
+	// релизная версия с верификатором
+
 
 typedef int canary_t;
 
@@ -82,6 +94,12 @@ void TEMPLATE(Stack, TYPE)::OK()
 
 	int error = 0;
 
+	if ((size < 0) || (capacity < 0))
+	{
+		error = STACK_FEWS;
+		printf("!! INDEX OUT OF RANGE !!\n");
+		fprintf(potok, "ERRORS Code - <%d>", STACK_FEWS);
+	}
 	if (size > capacity)
 	{
 		error = STACK_OVER;
@@ -133,7 +151,26 @@ TEMPLATE (Stack, TYPE)::TEMPLATE(Stack, TYPE)()
 
 	data = (TYPE*)calloc(1, capacity * sizeof(TYPE) + 2 * sizeof(canary_t));
 
-	assert(data);
+	if (data == nullptr)
+	{
+		FILE* potok;
+		potok = fopen("log.txt", "a");
+
+		if (errno)
+		{
+			char answer[100];
+
+			sprintf(answer, "Problem file: %s\n", "log.txt");
+
+			perror(answer);
+			exit(STACK_UNOP);
+		}
+		int error = STACK_NPTR;
+
+		printf("!! calloc return nullptr !!\n");
+		fprintf(potok, "ERRORS Code - <%d>", STACK_NPTR);
+		fclose(potok);
+	}
 
 	canary_t* first_canary = (canary_t*)(data);
 	*(first_canary) = POISON_can;
@@ -229,7 +266,26 @@ void TEMPLATE(Stack, TYPE)::recalloc(int elements, int Size)
 
 	data = (TYPE*)realloc(data, capacity * sizeof(TYPE) + 2 * sizeof(canary_t));
 
-	assert(data);
+	if (data == nullptr)
+	{
+		FILE* potok;
+		potok = fopen("log.txt", "a");
+
+		if (errno)
+		{
+			char answer[100];
+
+			sprintf(answer, "Problem file: %s\n", "log.txt");
+
+			perror(answer);
+			exit(STACK_UNOP);
+		}
+		int error = STACK_NPTR;
+
+		printf("!! realloc return nullptr !!\n");
+		fprintf(potok, "ERRORS Code - <%d>", STACK_NPTR);
+		fclose(potok);
+	}
 
 	canary_t* first_canary = (canary_t*)(data);
 	*(first_canary) = POISON_can;
