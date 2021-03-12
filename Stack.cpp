@@ -18,7 +18,7 @@
 
 int main()
 {
-	#if 0
+#if 0
 	Stack_int stk;
 
 	for (int i = 5; i < 25; i++)
@@ -32,11 +32,11 @@ int main()
 
 	int a = stk.Pop();
 	printf("\n\n%d\n\n", a);
-	
+
 	stk.DUMP();
-	#endif
-	      ///                                                      @@@@@@@@@
-	#if 1
+#endif
+	///                                                      @@@@@@@@@
+#if 1
 	Stack_double stek;
 
 	stek.Push(18);
@@ -69,8 +69,8 @@ int main()
 
 
 	stek.DUMP();
-	
-	#endif
+
+#endif
 
 	return 0;
 }
