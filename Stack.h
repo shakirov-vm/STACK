@@ -8,45 +8,12 @@
 #define CAT(x, y) x##_##y
 #define TEMPLATE(x, y) CAT(x, y)
 
-// Для каждого TYPE - отдельная константа 
-// Надо бы, что б делилось
-
+#ifndef STK_CNST_H    
+#define STK_CNST_H   
+#include "Stk_cnst.h"
+#endif 
 
 typedef int canary_t;
-
-const int POISON_int = 0xDEADBEEF;
-const double POISON_double = 0xDEADBEEF;  //-666.666;
-const float POISON_float = 0xDEADBEEF;    //666.666;
-const canary_t POISON_can = 0xDEADBEEF;
-
-void Fprint_int(FILE* potok, int num)
-{
-	fprintf(potok, "%d", num);
-}
-
-void Fprint_float(FILE* potok, float num)
-{
-	fprintf(potok, "%f", num);
-}
-
-void Fprint_double(FILE* potok, double num)
-{
-	fprintf(potok, "%lf", num);
-}
-
-
-enum STACK_ERROR
-{
-	STACK_LCD = 1,
-	STACK_RCD = 2,
-	STACK_LCS = 3,
-	STACK_RCS = 4,
-	STACK_NPTR = 5,
-	STACK_OVER = 6,
-	STACK_HASH = 7,
-	STACK_UNOP = 8,
-	STACK_FEWS = 9
-};
 
 class TEMPLATE(Stack, TYPE)
 {
@@ -96,7 +63,7 @@ TEMPLATE(Stack, TYPE)::TEMPLATE(Stack, TYPE)()
 
 	OK();
 }
-																			// Конструктор копирования
+																			  // Конструктор копирования
 TEMPLATE(Stack, TYPE)::TEMPLATE(Stack, TYPE)(const TEMPLATE(Stack, TYPE)& stk)
 {
 	data = (TYPE*)calloc(1, stk.capacity * sizeof(TYPE) + 2 * sizeof(canary_t));
@@ -121,8 +88,10 @@ TEMPLATE(Stack, TYPE)::TEMPLATE(Stack, TYPE)(const TEMPLATE(Stack, TYPE)& stk)
 	hash = CountHash((char*)data);
 
 	OK();
+
+	// ?
 }
-																					// Оператор присваивания
+																							// Оператор присваивания
 TEMPLATE(Stack, TYPE)& TEMPLATE(Stack, TYPE)::operator= (const TEMPLATE(Stack, TYPE)& stk)
 {
 	data = (TYPE*)calloc(1, stk.capacity * sizeof(TYPE) + 2 * sizeof(canary_t));
@@ -225,7 +194,7 @@ void TEMPLATE(Stack, TYPE)::DUMP()
 		perror(answer);
 		exit(STACK_UNOP);
 	}
-// Печать типа
+
 	fprintf(potok, "Stack ptr - <%p>\n", this);
 	fprintf(potok, "Data  ptr - <%p>\n", data);
 	fprintf(potok, "Size - <%d>, Capacity - <%d>\n", size, capacity);
@@ -355,6 +324,9 @@ unsigned long long TEMPLATE(Stack, TYPE)::CountHash(char* string)
 		hash_sum = hash_sum + (unsigned long long) * (string + i);
 		hash_sum = (hash_sum << 1) | (hash_sum >> 31);
 	}
+
+	hash_sum = hash_sum + capacity;
+	hash_sum = hash_sum * size;
 
 	return hash_sum;
 }

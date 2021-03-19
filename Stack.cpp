@@ -1,16 +1,16 @@
 ﻿
-#ifndef _2_H_
-#define _2_H_
+#ifndef STK_CNST_H    
+#define STK_CNST_H  
+#include "Stk_cnst.h"
+#endif 
 
-#endif //_2_H_
-
-#if 0
+#if 1
 #define TYPE int
 #include "Stack.h"
 #undef TYPE
-#endif//                                                         @@@@@@
+#endif                                                        
 
-#if 0
+#if 1
 #define TYPE float
 #include "Stack.h"
 #undef TYPE
@@ -22,8 +22,6 @@
 #undef TYPE
 #endif
 
-// 1) Конструктор копирования
-
 void ErroRio(Stack_double stk)
 {
 	printf("You there\n");
@@ -32,7 +30,7 @@ void ErroRio(Stack_double stk)
 
 int main()
 {
-#if 0
+#if 1
 	Stack_int stk;
 
 	for (int i = 5; i < 25; i++)
@@ -49,7 +47,7 @@ int main()
 
 	stk.DUMP();
 #endif
-	///                                                      @@@@@@@@@
+	
 #if 1
 	Stack_double stek;
 
@@ -60,10 +58,10 @@ int main()
 
 	stek.DUMP();
 
-	double a = stek.Pop();
+	double c = stek.Pop();
 	double b = stek.Pop();
 
-	printf("a = %lf, b = %lf\n\n", a, b);
+	printf("c = %lf, b = %lf\n\n", c, b);
 
 	stek.DUMP();
 
@@ -84,9 +82,11 @@ int main()
 
 	stek.DUMP();
 
-	Stack_double SSTTEECKKC;
+	Stack_double CKATS;
 
-	SSTTEECKKC = stek;
+	CKATS = stek;
+
+	CKATS.Push(7);
 
 	ErroRio(stek);
 
