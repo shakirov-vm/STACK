@@ -1,4 +1,10 @@
-﻿#if 0
+﻿
+#ifndef _2_H_
+#define _2_H_
+
+#endif //_2_H_
+
+#if 0
 #define TYPE int
 #include "Stack.h"
 #undef TYPE
@@ -15,6 +21,14 @@
 #include "Stack.h"
 #undef TYPE
 #endif
+
+// 1) Конструктор копирования
+
+void ErroRio(Stack_double stk)
+{
+	printf("You there\n");
+}
+
 
 int main()
 {
@@ -70,7 +84,14 @@ int main()
 
 	stek.DUMP();
 
+	Stack_double SSTTEECKKC;
+
+	SSTTEECKKC = stek;
+
+	ErroRio(stek);
+
 #endif
 
 	return 0;
 }
+

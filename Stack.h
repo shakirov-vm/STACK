@@ -8,25 +8,16 @@
 #define CAT(x, y) x##_##y
 #define TEMPLATE(x, y) CAT(x, y)
 
-enum STACK_ERROR
-{
-	STACK_LCD = 1,
-	STACK_RCD = 2,
-	STACK_LCS = 3,
-	STACK_RCS = 4,
-	STACK_NPTR = 5,
-	STACK_OVER = 6,
-	STACK_HASH = 7,
-	STACK_UNOP = 8,
-	STACK_FEWS = 9
-};
+// Для каждого TYPE - отдельная константа 
+// Надо бы, что б делилось
+
 
 typedef int canary_t;
 
-int POISON_int = 0xDEADBEEF;
-double POISON_double = -666.666;
-float POISON_float = 666.666;
-canary_t POISON_can = 0xDEADBEEF;
+const int POISON_int = 0xDEADBEEF;
+const double POISON_double = 0xDEADBEEF;  //-666.666;
+const float POISON_float = 0xDEADBEEF;    //666.666;
+const canary_t POISON_can = 0xDEADBEEF;
 
 void Fprint_int(FILE* potok, int num)
 {
@@ -43,6 +34,20 @@ void Fprint_double(FILE* potok, double num)
 	fprintf(potok, "%lf", num);
 }
 
+
+enum STACK_ERROR
+{
+	STACK_LCD = 1,
+	STACK_RCD = 2,
+	STACK_LCS = 3,
+	STACK_RCS = 4,
+	STACK_NPTR = 5,
+	STACK_OVER = 6,
+	STACK_HASH = 7,
+	STACK_UNOP = 8,
+	STACK_FEWS = 9
+};
+
 class TEMPLATE(Stack, TYPE)
 {
 private:
@@ -56,7 +61,9 @@ private:
 
 public:
 
-	TEMPLATE(Stack, TYPE)();   
+	TEMPLATE(Stack, TYPE)(); 
+	TEMPLATE(Stack, TYPE)(const TEMPLATE(Stack, TYPE) &stk);
+	TEMPLATE(Stack, TYPE)& operator= (const TEMPLATE(Stack, TYPE) & stk);
 	void Push(TYPE num);
 	TYPE Pop();
 	void OK();
@@ -65,30 +72,14 @@ public:
 	unsigned long long CountHash(char* str);
 	~TEMPLATE(Stack, TYPE)();
 };
-
+                                                                 // Конструктор по умолчанию
 TEMPLATE(Stack, TYPE)::TEMPLATE(Stack, TYPE)()
 {
 	capacity = 1;
 
 	data = (TYPE*)calloc(1, capacity * sizeof(TYPE) + 2 * sizeof(canary_t));
 
-	if (data == nullptr)
-	{
-		FILE* potok;
-		potok = fopen("log.txt", "a");
-
-		if (errno)
-		{
-			char answer[100];
-
-			sprintf(answer, "Problem file: %s\n", "log.txt");
-
-			perror(answer);
-			exit(STACK_UNOP);
-		}
-
-		fclose(potok);
-	}
+	if (data == nullptr) OK();
 
 	canary_t* first_canary = (canary_t*)(data);
 	*(first_canary) = POISON_can;
@@ -104,6 +95,75 @@ TEMPLATE(Stack, TYPE)::TEMPLATE(Stack, TYPE)()
 	right_canary = POISON_can;
 
 	OK();
+}
+																			// Конструктор копирования
+TEMPLATE(Stack, TYPE)::TEMPLATE(Stack, TYPE)(const TEMPLATE(Stack, TYPE)& stk)
+{
+	data = (TYPE*)calloc(1, stk.capacity * sizeof(TYPE) + 2 * sizeof(canary_t));
+
+	if (data == nullptr) OK();
+
+	size = stk.size;
+	capacity = stk.capacity;
+	left_canary = POISON_can;
+	right_canary = POISON_can;
+
+	canary_t* first_canary = (canary_t*)(data);
+	*(first_canary) = POISON_can;
+
+	data = (TYPE*)((canary_t*)data + 1);
+													
+	data = (TYPE*) memcpy(data, stk.data, stk.capacity * sizeof(TYPE)); 
+
+	canary_t* second_canary = (canary_t*)(data + capacity);
+	*(second_canary) = POISON_can;
+
+	hash = CountHash((char*)data);
+
+	OK();
+}
+																					// Оператор присваивания
+TEMPLATE(Stack, TYPE)& TEMPLATE(Stack, TYPE)::operator= (const TEMPLATE(Stack, TYPE)& stk)
+{
+	data = (TYPE*)calloc(1, stk.capacity * sizeof(TYPE) + 2 * sizeof(canary_t));
+
+	if (data == nullptr)
+	{
+		FILE* potok = fopen("log.txt", "a");
+
+		if (errno)
+		{
+			char answer[100];
+
+			sprintf(answer, "Problem file: %s\n", "log.txt");
+
+			perror(answer);
+			exit(STACK_UNOP);
+		}
+
+		fclose(potok);
+	}
+
+	size = stk.size;
+	capacity = stk.capacity;
+	left_canary = POISON_can;
+	right_canary = POISON_can;
+
+	canary_t* first_canary = (canary_t*)(data);
+	*(first_canary) = POISON_can;
+
+	data = (TYPE*)((canary_t*)data + 1);
+
+	data = (TYPE*)memcpy(data, stk.data, stk.capacity * sizeof(TYPE));
+
+	canary_t* second_canary = (canary_t*)(data + capacity);
+	*(second_canary) = POISON_can;
+
+	hash = CountHash((char*)data);
+
+	OK();
+
+	//?
 }
 
 TEMPLATE(Stack, TYPE)::~TEMPLATE(Stack, TYPE)()
@@ -139,24 +199,22 @@ void TEMPLATE(Stack, TYPE)::Push(TYPE num)
 
 TYPE TEMPLATE(Stack, TYPE)::Pop()
 {
-	OK();
-
-	size--;
+	if (size >= 0) size--;
+	else OK();
 
 	TYPE returned = *(data + size);
 	*(data + size) = TEMPLATE(POISON, TYPE);
 
 	hash = CountHash((char*)data);
 
-	return returned;
-
 	OK();
+
+	return returned;
 }
 
 void TEMPLATE(Stack, TYPE)::DUMP()
 {
-	FILE* potok;
-	potok = fopen("log.txt", "a");
+	FILE* potok = fopen("log.txt", "a");
 
 	if (errno)
 	{
@@ -167,7 +225,7 @@ void TEMPLATE(Stack, TYPE)::DUMP()
 		perror(answer);
 		exit(STACK_UNOP);
 	}
-
+// Печать типа
 	fprintf(potok, "Stack ptr - <%p>\n", this);
 	fprintf(potok, "Data  ptr - <%p>\n", data);
 	fprintf(potok, "Size - <%d>, Capacity - <%d>\n", size, capacity);
@@ -193,25 +251,10 @@ void TEMPLATE(Stack, TYPE)::recalloc(int elements, int Size)
 
 	data = (TYPE*)realloc(data, capacity * sizeof(TYPE) + 2 * sizeof(canary_t));
 
-	if (data == nullptr)
-	{
-		FILE* potok;
-		potok = fopen("log.txt", "a");
-
-		if (errno)
-		{
-			char answer[100];
-
-			sprintf(answer, "Problem file: %s\n", "log.txt");
-
-			perror(answer);
-			exit(STACK_UNOP);
-		}
-		fclose(potok);
-	}
+	if (data == nullptr) OK();
 
 	canary_t* first_canary = (canary_t*)(data);
-	*(first_canary) = POISON_can;
+	*(first_canary) = POISON_can;  // = first_canary
 
 	data = (TYPE*)((canary_t*)data + 1);
 
@@ -230,8 +273,7 @@ void TEMPLATE(Stack, TYPE)::recalloc(int elements, int Size)
 
 void TEMPLATE(Stack, TYPE)::OK()
 {
-	FILE* potok;
-	potok = fopen("log.txt", "a");
+	FILE* potok = fopen("log.txt", "a");
 
 	if (errno)
 	{
@@ -245,6 +287,12 @@ void TEMPLATE(Stack, TYPE)::OK()
 
 	int error = 0;
 
+	if (data == nullptr)
+	{
+		error = STACK_NPTR;
+		printf("!! data is nullptr !!\n");
+		fprintf(potok, "ERRORS Code - <%d>", STACK_NPTR);
+	}
 	if ((size < 0) || (capacity < 0))
 	{
 		error = STACK_FEWS;
@@ -269,6 +317,9 @@ void TEMPLATE(Stack, TYPE)::OK()
 		printf("STRUCT: !! Right dead !!\n");
 		fprintf(potok, "ERRORS Code - <%d>", STACK_RCS);
 	}
+
+	assert(data);
+
 	if (*((canary_t*)data - 1) != POISON_can)
 	{
 		error = STACK_LCD;
@@ -287,12 +338,6 @@ void TEMPLATE(Stack, TYPE)::OK()
 		printf("Hash isn't true");
 		fprintf(potok, "ERRORS Code - <%d>", STACK_HASH);
 	}
-	if (data == nullptr)
-	{
-		error = STACK_NPTR;
-		printf("!! data is nullptr !!\n");
-		fprintf(potok, "ERRORS Code - <%d>", STACK_NPTR);
-	}
 	if (error != 0)
 	{
 		DUMP();
@@ -300,7 +345,7 @@ void TEMPLATE(Stack, TYPE)::OK()
 
 	fclose(potok);
 }
-
+// Добавить инфу о самом стэке
 unsigned long long TEMPLATE(Stack, TYPE)::CountHash(char* string)
 {
 	int hash_sum = 0;
